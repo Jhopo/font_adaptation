@@ -20,6 +20,8 @@ import collections
 DATA_DIR = '/media/jhopo/DATA/NTU/MSLAB/Font Generation/dataset/'
 DEFAULT_CHARSET = "/media/jhopo/DATA/NTU/MSLAB/Font Generation/src/Dataset/charset/cjk.json"
 PROTOTYPE_FONTFILE = 'DFKingGothicTC1-Regular_TTF_TW.ttf'#'DFPT_ZK7_TTF_TW.ttf'
+#PROTOTYPE_FONTFILE = 'DFT_B5.ttc'#'DFT_M5.ttc'
+SOURCE = 'small'
 
 CN_CHARSET = None
 CN_T_CHARSET = None
@@ -47,15 +49,17 @@ def draw_single_char(ch, font, canvas_size, x_offset, y_offset):
 def load_ttf_list(char_size=216):
     all_font = []
     font_list, font_dict = [], {}
-    filenames = sorted(glob.glob(os.path.join(DATA_DIR, 'small', 'unpack', '*.ttf')))
+    filenames = sorted(glob.glob(os.path.join(DATA_DIR, SOURCE, '*.ttf')) + glob.glob(os.path.join(DATA_DIR, SOURCE, '*.ttc')))
     for filename in filenames:
-        if 'TW' in filename:
-            font = ImageFont.truetype(filename, size=char_size)
-            all_font.append(font)
+        font = ImageFont.truetype(filename, size=char_size)
+        all_font.append(font)
 
+        if 'ttf' in filename:
             font_name = filename.split('/')[-1].replace('.ttf', '')
-            font_list.append(font_name)
-            font_dict[font_name] = len(font_dict)
+        if 'ttc' in filename:
+            font_name = filename.split('/')[-1].replace('.ttc', '')
+        font_list.append(font_name)
+        font_dict[font_name] = len(font_dict)
 
     return all_font, font_list, font_dict
 
@@ -88,7 +92,7 @@ def create_dictionary(blank_hashing, charset, prototype_font, all_font, font_lis
             if img_hash != blank_hashing:
                 char_dict[font_list[i]].add(c)
 
-    with open(join(DATA_DIR, 'small', 'char_dictionary.pkl'), 'wb') as f:
+    with open(join(DATA_DIR, SOURCE, 'char_dictionary.pkl'), 'wb') as f:
         pickle.dump(char_dict, f)
     '''
     proto_dict = set()
@@ -106,7 +110,7 @@ def create_dictionary(blank_hashing, charset, prototype_font, all_font, font_lis
 
 
 def load_dictionary():
-    with open(join(DATA_DIR, 'small', 'char_dictionary.pkl'), 'rb') as f:
+    with open(join(DATA_DIR, SOURCE, 'char_dictionary.pkl'), 'rb') as f:
         char_dict = pickle.load(f)
 
     #with open(join(DATA_DIR, 'prototype', 'char_dictionary.pkl'), 'rb') as f:
@@ -117,12 +121,38 @@ def load_dictionary():
 
 load_global_charset()
 charset = CN_CHARSET
-prototype_font = ImageFont.truetype(os.path.join(DATA_DIR, 'small', 'unpack', PROTOTYPE_FONTFILE), size=216)
+prototype_font = ImageFont.truetype(os.path.join(DATA_DIR, SOURCE, PROTOTYPE_FONTFILE), size=216)
 all_font, font_list, font_dict = load_ttf_list()
 
 #blank_hashing = create_repeating_images(charset, all_font, font_list)
 #create_dictionary(blank_hashing, charset, prototype_font, all_font, font_list)
 char_dict = load_dictionary()
+
+if SOURCE == 'small':
+    indices = np.array([0,  2,  3,  4,  5,  6,  7,  8,  9, 10, 11, 12, 13, 14, 15, 16,
+           17, 18, 20, 21, 22, 23, 24, 25, 26, 27, 1, 19, 28, 29])
+
+    all_font = list(np.array(all_font)[indices])
+    font_list = list(np.array(font_list)[indices])
+
+if SOURCE == 'big':
+    indices = np.array([121,  86, 157, 126,  33,  15, 165, 164, 143,  65,  57,  27,  75,
+           169, 118,  34, 120,  41,  51,  22, 105,  94, 115, 167,  70, 153,
+            61,  73, 149,  97, 154,   2,  36,  93, 114,  11,   6, 117,  30,
+           128, 111,  21,  98,  59,  50, 103, 107, 147,  90, 134,  60,  24,
+            95,  23, 125, 168,  25,  39,  49,  20,   5,  28, 119, 110,  77,
+            82,   9, 104,  54,  18, 112,  83, 158,  38,  69,   3,  10, 148,
+            89, 135, 159,  16,  72,  48, 102,  44,  53,  78,  31, 137, 141,
+           129,  14,  52, 108,  26, 123,  91,   7, 155,   4, 113, 146,  87,
+            17,  47, 133, 136,  63, 130,  43, 138,  99, 106,  80,  68,  12,
+            62, 139,  76, 144,  42, 152,   1,  55, 156,  13,  29,  32, 127,
+           122, 131,  56,  66, 140,  67,  37, 150, 151,  84, 162, 142,  74,
+             0,  96,  19,  64, 132, 109, 124,  92,   8,  85, 101,  35,  81,
+           163,  79, 160,  40, 170,  88, 116, 166,  58,  45,  46, 100, 145,
+            71, 161])
+
+    all_font = list(np.array(all_font)[indices])
+    font_list = list(np.array(font_list)[indices])
 
 '''
 print ('total', len(charset))
@@ -154,20 +184,29 @@ for font_name in ['DFPT_K7_TTF_TW', 'DFPT_S5_TTF_TW']:
 '''
 
 class ChineseFontImages(Dataset):
-    def __init__(self, phase, num_sample=5, canvas_size=256, x_offset=20, y_offset=20):
+    def __init__(self, phase, num_sample=10, canvas_size=256, x_offset=20, y_offset=20):
+        if SOURCE ==  'small':
+            self.train_num = 26
+            self.train_sample = 72000
+            self.test_sample = 6000
+        elif SOURCE ==  'big':
+            self.train_num = 161
+            self.train_sample = 180000
+            self.test_sample = 18000
+
         if phase == 'train':
-            self.all_font = all_font[:25]
-            self.font_list = font_list[:25]
-            self.len = 72000
+            self.all_font = all_font[:self.train_num]
+            self.font_list = font_list[:self.train_num]
+            self.len = self.train_sample
             self.num_sample = num_sample
         if phase == 'test':
-            self.all_font = all_font[25:]
-            self.font_list = font_list[25:]
-            self.len = 6000
+            self.all_font = all_font[self.train_num:]
+            self.font_list = font_list[self.train_num:]
+            self.len = self.test_sample
             self.num_sample = num_sample
 
         self.prototype_font = prototype_font
-        self.prototype_name = PROTOTYPE_FONTFILE.replace('.ttf', '')
+        self.prototype_name = PROTOTYPE_FONTFILE.replace('.ttc', '').replace('.ttf', '')
         self.prototype_id = font_dict[self.prototype_name]
         self.font_dict = font_dict
         self.char_dict = char_dict
@@ -238,19 +277,32 @@ class ChineseFontImages(Dataset):
 
 
 class ChineseFontImagesEvaluate(Dataset):
-    def __init__(self, phase, canvas_size=256, x_offset=20, y_offset=20):
-        self.num_sample = 200
+    def __init__(self, phase, num_sample=10, canvas_size=256, x_offset=20, y_offset=20):
+        if SOURCE ==  'small':
+            self.train_num = 26
+            self.train_sample = 72000
+            self.test_sample = 6000
+        elif SOURCE ==  'big':
+            self.train_num = 161
+            self.train_sample = 180000
+            self.test_sample = 18000
 
         if phase == 'train':
-            self.all_font = all_font[:25]
-            self.font_list = font_list[:25]
-            self.len = 25 * self.num_sample
+            self.all_font = all_font[:self.train_num]
+            self.font_list = font_list[:self.train_num]
+            self.len = 11
+            self.num_sample = num_sample
         if phase == 'test':
-            self.all_font = all_font[25:]
-            self.font_list = font_list[25:]
-            self.len = 5 * self.num_sample
+            self.all_font = all_font[self.train_num:]
+            self.font_list = font_list[self.train_num:]
+            self.len = 11
+            self.num_sample = num_sample
 
+        self.prototype_font = prototype_font
+        self.prototype_name = PROTOTYPE_FONTFILE.replace('.ttc', '').replace('.ttf', '')
+        self.prototype_id = font_dict[self.prototype_name]
         self.font_dict = font_dict
+        self.char_dict = char_dict
 
         self.canvas_size = canvas_size
         self.x_offset = x_offset
@@ -261,37 +313,75 @@ class ChineseFontImagesEvaluate(Dataset):
                          transforms.ToTensor()])
 
 
+        self.source_font_id1 = np.random.randint(0, self.num_font)
+        self.source_font1 = self.all_font[self.source_font_id1]
+        self.source_font_name1 = self.font_list[self.source_font_id1]
+
+        self.source_font_id2 = np.random.randint(0, self.num_font)
+        self.source_font2 = self.all_font[self.source_font_id2]
+        self.source_font_name2 = self.font_list[self.source_font_id2]
+
+        while True:
+            self.target_char_id = np.random.randint(0, len(charset))
+            self.target_c = charset[self.target_char_id]
+            if self.target_c in self.char_dict[self.source_font_name1] and self.target_c in self.char_dict[self.prototype_name]:
+                break
+
+
+
     def __getitem__(self, index):
         # get image
-        font_id = int(index / self.num_sample)
-        img, char = self.sample_character_from_font(font_id)
+        img_prototype, img_target1, img_target2, img_source_list = self.sample_character_from_font(index, self.target_c, self.source_font_id1, self.source_font1, self.source_font_name1, self.source_font_id2, self.source_font2, self.source_font_name2)
 
         if self.transform is not None:
-            img = self.transform(img)
+            img_prototype = self.transform(img_prototype)
+            img_target1 = self.transform(img_target1)
+            img_target2 = self.transform(img_target2)
+            img_source_list = [self.transform(img) for img in img_source_list]
 
-        return img, torch.tensor(font_id).long()
+        img_source_list = torch.cat(img_source_list, 0)
+
+        real_label = 1
+        fake_label = 0
+
+        return img_prototype, img_target1, img_target2, img_source_list, torch.tensor(real_label).float(), torch.tensor(fake_label).float()
 
 
     def __len__(self):
         return self.len
 
 
-    def sample_character_from_font(self, font_id):
-        font = self.all_font[font_id]
-        font_name = self.font_list[font_id]
+    def sample_character_from_font(self, index, target_c, source_font_id1, source_font1, source_font_name1, source_font_id2, source_font2, source_font_name2):
+        img_prototype = draw_single_char(target_c, self.prototype_font, self.canvas_size, self.x_offset, self.y_offset)
+        img_target1 = draw_single_char(target_c, source_font1, self.canvas_size, self.x_offset, self.y_offset)
+        img_target2 = draw_single_char(target_c, source_font2, self.canvas_size, self.x_offset, self.y_offset)
 
-        while True:
-            char_id = np.random.randint(0, len(charset))
-            c = charset[char_id]
-            if c in char_dict[font_name]:
-                img = draw_single_char(c, font, self.canvas_size, self.x_offset, self.y_offset)
-                break
+        def sampling(target_c, source_font_name, source_font):
+            img_source_list = []
+            while True:
+                char_id = np.random.randint(0, len(charset))
+                c = charset[char_id]
+                if c in self.char_dict[source_font_name] and c != target_c:
+                    img = draw_single_char(c, source_font, self.canvas_size, self.x_offset, self.y_offset)
+                    img_source_list.append(img)
 
-        return img, c
+                if len(img_source_list) >= self.num_sample:
+                    break
+
+            return img_source_list
+
+        img_source_list1 = sampling(target_c, self.source_font_name1, self.source_font1)
+        img_source_list2 = sampling(target_c, self.source_font_name2, self.source_font2)
+
+        img_source_list = img_source_list1[index:] + img_source_list2[:index]
+
+
+        return img_prototype, img_target1, img_target2, img_source_list
 
 
 
 if __name__ == '__main__':
+    '''
     train_dataset = ChineseFontImages(phase='train')
     train_loader = DataLoader(train_dataset, batch_size=32, shuffle=False, num_workers=8)
     test_dataset = ChineseFontImages(phase='test')
@@ -307,3 +397,22 @@ if __name__ == '__main__':
         print (r_label.shape)
         print (f_label.shape)
         break
+    '''
+
+    train_dataset = ChineseFontImagesEvaluate(phase='train')
+    train_loader = DataLoader(train_dataset, batch_size=1, shuffle=False, num_workers=8)
+    test_dataset = ChineseFontImagesEvaluate(phase='test')
+    test_loader = DataLoader(test_dataset, batch_size=1, shuffle=False, num_workers=8)
+
+    for batch_idx, (img_prototype, img_target1, img_target2, img_source_list, r_label, f_label) in enumerate(train_loader):
+        #for i in img:
+        #    print (i.tolist())
+        #print (img)
+        print (batch_idx)
+        print (img_prototype.shape)
+        print (img_target1.shape)
+        print (img_target2.shape)
+        print (img_source_list.shape)
+        print (r_label.shape)
+        print (f_label.shape)
+        #break

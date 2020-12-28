@@ -20,6 +20,7 @@ import collections
 
 DATA_DIR = '/media/jhopo/DATA/NTU/MSLAB/Font Generation/dataset/'
 DEFAULT_CHARSET = "/media/jhopo/DATA/NTU/MSLAB/Font Generation/src/Dataset/charset/cjk.json"
+SOURCE = 'small'
 
 CN_CHARSET = None
 CN_T_CHARSET = None
@@ -47,7 +48,7 @@ def draw_single_char(ch, font, canvas_size, x_offset, y_offset):
 def load_ttf_list(char_size=216):
     all_font = []
     font_list, font_dict = [], {}
-    filenames = sorted(glob.glob(os.path.join(DATA_DIR, 'big', '*.ttf')) + glob.glob(os.path.join(DATA_DIR, 'big', '*.ttc')))
+    filenames = sorted(glob.glob(os.path.join(DATA_DIR, SOURCE, '*.ttf')) + glob.glob(os.path.join(DATA_DIR, SOURCE, '*.ttc')))
     for filename in filenames:
         font = ImageFont.truetype(filename, size=char_size)
         all_font.append(font)
@@ -90,13 +91,13 @@ def create_dictionary(blank_hashing, charset, all_font, font_list, canvas_size=2
             if img_hash != blank_hashing:
                 char_dict[font_list[i]].add(c)
 
-    with open(join(DATA_DIR, 'big', 'char_dictionary.pkl'), 'wb') as f:
+    with open(join(DATA_DIR, SOURCE, 'char_dictionary.pkl'), 'wb') as f:
         pickle.dump(char_dict, f)
 
 
 
 def load_dictionary():
-    with open(join(DATA_DIR, 'big', 'char_dictionary.pkl'), 'rb') as f:
+    with open(join(DATA_DIR, SOURCE, 'char_dictionary.pkl'), 'rb') as f:
         char_dict = pickle.load(f)
 
     return char_dict
@@ -105,28 +106,37 @@ def load_dictionary():
 load_global_charset()
 charset = CN_CHARSET
 all_font, font_list, font_dict = load_ttf_list()
+print(font_list)
 
 #blank_hashing = create_repeating_images(charset, all_font, font_list)
 #create_dictionary(blank_hashing, charset, all_font, font_list)
 char_dict = load_dictionary()
 
-indices = np.array([121,  86, 157, 126,  33,  15, 165, 164, 143,  65,  57,  27,  75,
-       169, 118,  34, 120,  41,  51,  22, 105,  94, 115, 167,  70, 153,
-        61,  73, 149,  97, 154,   2,  36,  93, 114,  11,   6, 117,  30,
-       128, 111,  21,  98,  59,  50, 103, 107, 147,  90, 134,  60,  24,
-        95,  23, 125, 168,  25,  39,  49,  20,   5,  28, 119, 110,  77,
-        82,   9, 104,  54,  18, 112,  83, 158,  38,  69,   3,  10, 148,
-        89, 135, 159,  16,  72,  48, 102,  44,  53,  78,  31, 137, 141,
-       129,  14,  52, 108,  26, 123,  91,   7, 155,   4, 113, 146,  87,
-        17,  47, 133, 136,  63, 130,  43, 138,  99, 106,  80,  68,  12,
-        62, 139,  76, 144,  42, 152,   1,  55, 156,  13,  29,  32, 127,
-       122, 131,  56,  66, 140,  67,  37, 150, 151,  84, 162, 142,  74,
-         0,  96,  19,  64, 132, 109, 124,  92,   8,  85, 101,  35,  81,
-       163,  79, 160,  40, 170,  88, 116, 166,  58,  45,  46, 100, 145,
-        71, 161])
+if SOURCE == 'small':
+    indices = np.array([0,  2,  3,  4,  5,  6,  7,  8,  9, 10, 11, 12, 13, 14, 15, 16,
+           17, 18, 20, 21, 22, 23, 24, 25, 26, 27, 1, 19, 28, 29])
 
-all_font = list(np.array(all_font)[indices])
-font_list = list(np.array(font_list)[indices])
+    all_font = list(np.array(all_font)[indices])
+    font_list = list(np.array(font_list)[indices])
+
+if SOURCE == 'big':
+    indices = np.array([121,  86, 157, 126,  33,  15, 165, 164, 143,  65,  57,  27,  75,
+           169, 118,  34, 120,  41,  51,  22, 105,  94, 115, 167,  70, 153,
+            61,  73, 149,  97, 154,   2,  36,  93, 114,  11,   6, 117,  30,
+           128, 111,  21,  98,  59,  50, 103, 107, 147,  90, 134,  60,  24,
+            95,  23, 125, 168,  25,  39,  49,  20,   5,  28, 119, 110,  77,
+            82,   9, 104,  54,  18, 112,  83, 158,  38,  69,   3,  10, 148,
+            89, 135, 159,  16,  72,  48, 102,  44,  53,  78,  31, 137, 141,
+           129,  14,  52, 108,  26, 123,  91,   7, 155,   4, 113, 146,  87,
+            17,  47, 133, 136,  63, 130,  43, 138,  99, 106,  80,  68,  12,
+            62, 139,  76, 144,  42, 152,   1,  55, 156,  13,  29,  32, 127,
+           122, 131,  56,  66, 140,  67,  37, 150, 151,  84, 162, 142,  74,
+             0,  96,  19,  64, 132, 109, 124,  92,   8,  85, 101,  35,  81,
+           163,  79, 160,  40, 170,  88, 116, 166,  58,  45,  46, 100, 145,
+            71, 161])
+
+    all_font = list(np.array(all_font)[indices])
+    font_list = list(np.array(font_list)[indices])
 
 '''
 print ('total', len(charset))
@@ -142,10 +152,10 @@ for i, font in enumerate(all_font):
 '''
 for i, font in enumerate(all_font):
     font_name = font_list[i]
-    for ic, c in enumerate(charset[:100]):
+    for ic, c in enumerate(charset[7456:7457]):
         if c in char_dict[font_name]:
             img = draw_single_char(c, font, 256, 20, 20)
-            img.save('../../dataset/test/{}_{}.jpg'.format(font_name, ic), "JPEG")
+            img.save('../dataset/test/{}_{}.jpg'.format(font_name, ic), "JPEG")
 '''
 '''
 for font_name in ['DFHB9L', 'DFT_CF4']:
@@ -159,12 +169,12 @@ for font_name in ['DFHB9L', 'DFT_CF4']:
 
 
 class ChineseFontImages(Dataset):
-    def __init__(self, source, phase, canvas_size=256, x_offset=20, y_offset=20):
-        if source ==  'small':
-            self.train_num = 25
+    def __init__(self, phase, canvas_size=256, x_offset=20, y_offset=20):
+        if SOURCE ==  'small':
+            self.train_num = 26
             self.train_sample = 72000
             self.test_sample = 18000
-        elif source ==  'big':
+        elif SOURCE ==  'big':
             self.train_num = 161
             self.train_sample = 180000
             self.test_sample = 54000
@@ -235,13 +245,13 @@ class ChineseFontImages(Dataset):
 
 
 class ChineseFontImagesEvaluate(Dataset):
-    def __init__(self, source, phase, canvas_size=256, x_offset=20, y_offset=20):
+    def __init__(self, phase, canvas_size=256, x_offset=20, y_offset=20):
         self.num_sample = 200
 
-        if source ==  'small':
-            self.train_num = 25
-            self.test_num = 5
-        elif source ==  'big':
+        if SOURCE ==  'small':
+            self.train_num = 26
+            self.test_num = 4
+        elif SOURCE ==  'big':
             self.train_num = 161
             self.test_num = 10
 
@@ -263,6 +273,8 @@ class ChineseFontImagesEvaluate(Dataset):
         self.num_font = len(self.font_list)
         self.transform = transforms.Compose([
                          transforms.ToTensor()])
+
+        #self.sample_char = self.get_sample_char()
 
 
     def __getitem__(self, index):
@@ -294,13 +306,27 @@ class ChineseFontImagesEvaluate(Dataset):
         return img, c
 
 
+    def get_sample_char(self):
+
+        font_name = self.font_list[0]
+
+        sample_list = []
+        while True:
+            char_id = np.random.randint(0, len(charset))
+            c = charset[char_id]
+            if c in char_dict[font_name]:
+                for font in self.all_font:
+                    img = draw_single_char(c, font, self.canvas_size, self.x_offset, self.y_offset)
+                    sample_list.append(img)
+                break
+
+        return sample_list
+
 
 if __name__ == '__main__':
-    source = 'big'
-
-    train_dataset = ChineseFontImages(phase='train', source=source)
+    train_dataset = ChineseFontImages(phase='train')
     train_loader = DataLoader(train_dataset, batch_size=32, shuffle=False, num_workers=8)
-    test_dataset = ChineseFontImages(phase='test', source=source)
+    test_dataset = ChineseFontImages(phase='test')
     test_loader = DataLoader(test_dataset, batch_size=32, shuffle=False, num_workers=8)
 
     for batch_idx, (img_a1, img_a2, img_b, r_label, f_label) in enumerate(train_loader):

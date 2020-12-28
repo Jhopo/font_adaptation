@@ -136,7 +136,7 @@ def train(model, train_dataloader, test_dataloader, args, device):
     optimizer = optim.RMSprop(model.parameters(), lr=1e-3)
     criterion = nn.MSELoss()
 
-    model.encoder.load_state_dict(torch.load('../saved_model/encoder_8.pkl'))
+    #model.encoder.load_state_dict(torch.load('../saved_model/encoder_8.pkl'))
 
     f = open('../result.txt', 'w')
     f.write('training_loss,testing_loss\n')
@@ -214,14 +214,15 @@ def train(model, train_dataloader, test_dataloader, args, device):
         f.write('{:.4f},{:.4f}\n'.format(d_losses.avg, t_d_losses.avg))
         f.flush()
 
+
 def test(model, train_dataloader, test_dataloader, args, device):
     np.random.seed(1124)
 
     model = model.encoder
-    model.load_state_dict(torch.load('../saved_model/encoder_161fonts.pkl'))
+    model.load_state_dict(torch.load('../saved_model/encoder_36.pkl'))
 
     def get_encodings(train_dataloader):
-        encodings, labels = [], []
+        encodings, labels, imgs = [], [], []
 
         model.eval()
         train_pbar = tqdm(total=len(train_dataloader), ncols=100, leave=True)
@@ -234,19 +235,24 @@ def test(model, train_dataloader, test_dataloader, args, device):
 
             encodings += encoding.cpu().tolist()
             labels += label.cpu().tolist()
-
+            '''
+            if batch_idx % 200 == 0:
+                imgs += img.cpu().tolist()
+            '''
             train_pbar.update()
         train_pbar.close()
 
-        return np.array(encodings), np.array(labels)
+        return np.array(encodings), np.array(labels), np.array(imgs)
 
-    train_encodings, train_labels = get_encodings(train_dataloader)
-    test_encodings, test_labels = get_encodings(test_dataloader)
+    train_encodings, train_labels, train_imgs = get_encodings(train_dataloader)
+    test_encodings, test_labels, test_imgs = get_encodings(test_dataloader)
 
     import matplotlib
     matplotlib.use('Agg')
     import matplotlib.pyplot as plt
     import matplotlib.patches as mpatches
+    from matplotlib.offsetbox import TextArea, DrawingArea, OffsetImage, AnnotationBbox
+    import matplotlib.image as mpimg
     from sklearn.manifold import TSNE
 
     def create_tsne(file_name, encodings, labels, font_list):
@@ -277,17 +283,34 @@ def test(model, train_dataloader, test_dataloader, args, device):
         for i, font_name in enumerate(font_list):
             legends.append(mpatches.Patch(color=color_list[i], label='{}'.format(font_name)))
 
-        size = 4
+        size = 3
         for idx, feature in enumerate(encodings):
             label = labels[idx]
             plt.scatter(feature[0], feature[1], c=color_list[label], s=size)
+
+        # adding images
+        '''
+        fig, ax = plt.subplots()
+        ax.set_xlim(-160, 160)
+        ax.set_ylim(-160, 160)
+
+        encodings = encodings.reshape(-1, 200, 2)
+        encodings = np.mean(encodings, axis=1)
+
+        for idx, feature in enumerate(encodings):
+
+            img = np.moveaxis(train_imgs[idx], 0, 2)
+            imagebox = OffsetImage(img, zoom=0.1)
+            ab = AnnotationBbox(imagebox, (feature[0], feature[1]))
+            ax.add_artist(ab)
+        '''
 
         #plt.legend(handles=legends)
         plt.savefig('../{}_tsne.png'.format(file_name), bbox_inches='tight')
         plt.gcf().clear()
 
     create_tsne('train', train_encodings, train_labels, train_dataset.font_list)
-    #create_tsne('test', test_encodings, test_labels, test_dataset.font_list)
+    create_tsne('test', test_encodings, test_labels, test_dataset.font_list)
     #create_tsne('all', np.array(list(train_encodings) + list(test_encodings)), np.array([20 for _ in train_labels] + list(test_labels)), test_dataset.font_list)
 
 
@@ -299,10 +322,9 @@ if __name__ == '__main__':
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
     # build models
-    StyleLearner_model = StyleLearner(encoding_dim=256).to(device)
+    StyleLearner_model = StyleLearner(encoding_dim=16).to(device)
     #encoder_model = StyleLearner_model.encoder.load_state_dict(torch.load('../saved_model/encoder.pkl'))
 
-    source = 'small'
     if args.train:
         # create dataset loader
         from Dataset.chinese_font_style import ChineseFontImages

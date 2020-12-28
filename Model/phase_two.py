@@ -23,12 +23,12 @@ class FontGenerator(nn.Module):
         self.device = device
 
         StyleLearner_model = StyleLearner(encoding_dim=encoding_dim)
-        StyleLearner_model.encoder.load_state_dict(torch.load('../saved_model/encoder.pkl'))
+        StyleLearner_model.encoder.load_state_dict(torch.load('../saved_model/encoder_64.pkl'))
         self.encoder = StyleLearner_model.encoder
         for param in self.encoder.parameters():
             param.requires_grad = False
 
-        self.generator = UNetGenerator()
+        self.generator = UNetGenerator(embedding_dim=encoding_dim)
         #self.discriminator = Discriminator_wgan()
 
     def forward(self, img_prototype, img_source_list):

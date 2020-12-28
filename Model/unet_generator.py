@@ -131,6 +131,6 @@ if __name__ == '__main__':
     model = UNetGenerator()
 
     input_1 = torch.randn(8, 3, 256, 256)
-    input_2 = torch.randn(8, 128)
+    input_2 = torch.randn(8, 256)
     output_1, output_2 = model(input_1, input_2)
     print (output_1.shape, output_2.shape)
